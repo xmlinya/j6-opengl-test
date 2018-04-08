@@ -10,15 +10,8 @@ disp_hander_t g_disp2 = NULL;
 struct drm_fb {
 	struct gbm_bo *bo;
 	uint32_t fb_id;
-	uint32_t size;
-	uint64_t offset;		/* offset to mmap() */
-	int dmabuf_fd;
-	int index;
-	unsigned char * buf;
 };
 
-struct drm_fb* drm_on_opengl[10];
-//struct gbm_bo *next_bo = NULL;
 struct gl_obj_t gl;
 struct gbm_obj_t gbm;
 
@@ -57,14 +50,7 @@ static int init_gl(void)
 		printf("failed to initialize\n");
 		return -1;
 	}
-/*
-	printf("Using display %p with EGL version %d.%d\n",
-			gl.display, major, minor);
 
-	printf("EGL Version \"%s\"\n", eglQueryString(gl.display, EGL_VERSION));
-	printf("EGL Vendor \"%s\"\n", eglQueryString(gl.display, EGL_VENDOR));
-	printf("EGL Extensions \"%s\"\n", eglQueryString(gl.display, EGL_EXTENSIONS));
-*/
 	if (!eglBindAPI(EGL_OPENGL_ES_API)) {
 		printf("failed to bind api EGL_OPENGL_ES_API\n");
 		return -1;
@@ -123,7 +109,6 @@ drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
 	struct drm_fb *fb = data;
 	struct gbm_device *gbm = gbm_bo_get_device(bo);
-	munmap(fb->buf, fb->size);
 	if (fb->fb_id)
 		drmModeRmFB(disp_get_fd(g_disp1), fb->fb_id);
 
@@ -159,14 +144,6 @@ struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo)
 		return NULL;
 	}
 
-	fb->offset = req.offset;
-	fb->size = req.size;
-	fb->dmabuf_fd = gbm_bo_get_fd(bo);
-	fb->buf = mmap(0, fb->size, PROT_READ | PROT_WRITE,
-				MAP_SHARED, disp_get_fd(g_disp1), fb->offset);
-	fb->index = indexk;
-	drm_on_opengl[indexk++] = fb;
-
 	ret = drmModeAddFB(disp_get_fd(g_disp1), width, height, 24, 32, stride, handle, &fb->fb_id);
 	if (ret) {
 		printf("failed to create fb: %s\n", strerror(errno));
@@ -184,7 +161,6 @@ void cleanup_kmscube(void)
 {
 	exit_gl();
 	exit_gbm();
-
 
 	disp_close(g_disp1);
 	disp_close(g_disp2);

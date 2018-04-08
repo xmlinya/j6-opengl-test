@@ -65,7 +65,6 @@ struct gbm_obj_t{
 extern struct gl_obj_t gl;
 extern struct gbm_obj_t gbm;
 extern unsigned int   g_chnset; 
-//extern struct gbm_bo *next_bo;
 
 struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo);
 
